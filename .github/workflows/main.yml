@@ -1,0 +1,52 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  build:
+    runs-on: windows-latest  # Используем Windows runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v1.13
+      with:
+        cmake-version: '3.26.x'
+
+    - name: Setup Visual Studio
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        vs-version: '17.0'  # Visual Studio 2022
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Configure CMake
+      working-directory: ./build
+      run: cmake .. -G "Visual Studio 17 2022" -A x64
+
+    - name: Build project
+      working-directory: ./build
+      run: cmake --build . --config Release
+
+    - name: Upload executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: virus-exe
+        path: build/Release/virus.exe
+        retention-days: 7  # Хранить артефакт 7 дней
+
+    - name: Upload debug symbols (опционально)
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: pdb-files
+        path: build/Release/*.pdb
+        retention-days: 7
