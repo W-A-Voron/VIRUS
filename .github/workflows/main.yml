@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022  # Фиксируем версию, где VS 2022 точно есть
+    runs-on: windows-2022
 
     steps:
     - name: Checkout code
@@ -22,19 +22,19 @@ jobs:
 
     - name: Create build directory
       run: |
-        New-Item -ItemType Directory -Force -Path build
-      shell: pwsh
+        mkdir build
+      shell: cmd
 
     - name: Configure CMake
       working-directory: ./build
       run: |
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
-      shell: cmd  # Используем cmd вместо pwsh для совместимости
+        cmake .. -G "Visual Studio 17 2022" -A x64
+      shell: cmd
 
     - name: Build project
       working-directory: ./build
       run: |
-        cmake --build . --config Release -- /m
+        cmake --build . --config Release
       shell: cmd
 
     - name: Upload executable
@@ -55,11 +55,3 @@ jobs:
           build/Release/*.ilk
         retention-days: 7
         compression-level: 9
-
-    - name: Upload build logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs
-        path: build/CMakeFiles/*.log
-        retention-days: 3
