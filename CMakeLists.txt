@@ -4,8 +4,6 @@ project(Virus)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Убираем /Werror, так как MSVC его не понимает
-# Оставляем только базовые предупреждения
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2 /MT")
@@ -42,6 +40,7 @@ target_link_libraries(virus
 )
 
 target_compile_definitions(virus PRIVATE _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING)
+target_compile_definitions(virus PRIVATE _CRT_SECURE_NO_WARNINGS)
 
 if(WIN32)
     set_target_properties(virus PROPERTIES
