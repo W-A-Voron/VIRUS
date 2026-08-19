@@ -5,14 +5,12 @@
 #include <chrono>
 #include <thread>
 
-std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+std::mt19937 rng((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
 
 void FlashScreen() {
-    // Получаем дескриптор рабочего стола
     HDC hdc = GetDC(NULL);
     if (!hdc) return;
 
-    // Создаём кисть для заливки
     HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
     HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
     HBRUSH redBrush = CreateSolidBrush(RGB(255, 0, 0));
@@ -24,12 +22,9 @@ void FlashScreen() {
     for (int i = 0; i < 50; i++) {
         RECT rect;
         GetClientRect(GetDesktopWindow(), &rect);
-
-        // Случайное мерцание
         int random = std::uniform_int_distribution<int>(0, 4)(rng);
         FillRect(hdc, &rect, brushes[random]);
 
-        // Добавляем случайный текст
         std::string messages[] = {
             "YOU'RE BEING WATCHED",
             "THEY KNOW WHERE YOU LIVE",
@@ -44,11 +39,9 @@ void FlashScreen() {
         SetBkMode(hdc, TRANSPARENT);
         SetTextColor(hdc, RGB(255, 255, 255));
         DrawTextA(hdc, messages[msgIdx].c_str(), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
         Sleep(std::uniform_int_distribution<int>(50, 200)(rng));
     }
 
-    // Очищаем ресурсы
     for (auto brush : brushes) {
         DeleteObject(brush);
     }
@@ -56,22 +49,18 @@ void FlashScreen() {
 }
 
 void ShowFullscreenImage() {
-    // Загружаем случайную картинку из ресурсов или создаём
-    // Для простоты — рисуем что-то страшное прямо на экране
     HDC hdc = GetDC(NULL);
     if (!hdc) return;
 
     RECT rect;
     GetClientRect(GetDesktopWindow(), &rect);
 
-    // Рисуем лицо из символов
     HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
     FillRect(hdc, &rect, blackBrush);
 
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(255, 0, 0));
 
-    // Страшное лицо
     const char* face[] = {
         "  /\\_/\\  ",
         " ( o.o ) ",
@@ -83,7 +72,7 @@ void ShowFullscreenImage() {
     };
 
     for (int i = 0; i < 7; i++) {
-        TextOutA(hdc, rect.left + rect.right / 2 - 20, rect.top + i * 30 + 100, face[i], strlen(face[i]));
+        TextOutA(hdc, rect.left + rect.right / 2 - 20, rect.top + i * 30 + 100, face[i], (int)strlen(face[i]));
     }
 
     TextOutA(hdc, rect.left + rect.right / 2 - 100, rect.top + 350, "I'M INSIDE YOUR WALLS", 20);
@@ -105,18 +94,15 @@ void ShowScaryMessage() {
 
 void ScreamerLoop() {
     while (true) {
-        // Случайная задержка между скримерами
         int delay = std::uniform_int_distribution<int>(3000, 15000)(rng);
         Sleep(delay);
 
-        // Выбираем случайный эффект
         int effect = std::uniform_int_distribution<int>(0, 3)(rng);
         switch (effect) {
             case 0: FlashScreen(); break;
             case 1: ShowFullscreenImage(); break;
             case 2: ShowScaryMessage(); break;
             case 3:
-                // Мигаем экраном и показываем скример
                 for (int i = 0; i < 10; i++) {
                     HDC hdc = GetDC(NULL);
                     RECT rect;
@@ -134,7 +120,6 @@ void ScreamerLoop() {
 }
 
 void InitializeScareModule() {
-    // Запускаем скримеры сразу
     std::thread scareThread(ScreamerLoop);
     scareThread.detach();
 }
