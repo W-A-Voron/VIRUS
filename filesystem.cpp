@@ -5,6 +5,7 @@
 #include <chrono>
 #include <fstream>
 #include <vector>
+#include <thread>  // <--- ДОБАВЛЕНО
 #include <shlobj.h>
 
 namespace fs = std::filesystem;
