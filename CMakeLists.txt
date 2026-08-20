@@ -26,6 +26,7 @@ add_executable(virus
     openrand.cpp
     bootmod.cpp
     diskblock.cpp
+    lockdown.cpp  # НОВЫЙ МОДУЛЬ
 )
 
 target_link_libraries(virus
